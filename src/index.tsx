@@ -2,6 +2,9 @@ import { html } from "@elysiajs/html";
 import { Elysia, t } from "elysia";
 import type { Children } from "@kitajs/html";
 import { staticPlugin } from "@elysiajs/static";
+import { Todo, todos } from "./db/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 const app = new Elysia()
   .use(staticPlugin())
@@ -13,12 +16,13 @@ const app = new Elysia()
       </BaseHTML>
     );
   })
-  .get("/todos", () => {
+  .get("/todos", async () => {
+    const data = await db.select().from(todos).all();
     return (
       <BaseHTML>
         <div class="grid gap-3">
           <ul data-id="list" class="flex flex-col gap-2">
-            {db.map((todo) => {
+            {data.map((todo) => {
               return <TodoItem {...todo} />;
             })}
           </ul>
@@ -29,12 +33,11 @@ const app = new Elysia()
   })
   .put(
     "/todos/:id",
-    ({ params }) => {
-      const id = params.id;
-      const todo = db.find((todo) => todo.id === id);
-      if (todo) {
-        todo.completed = !todo.completed;
-        return <TodoItem {...todo} />;
+    async ({ params }) => {
+      const oldTodo = await db.select().from(todos).where(eq(todos.id, params.id)).get();
+      if (oldTodo) {
+        const newTodo = await db.update(todos).set({ completed: !oldTodo.completed }).where(eq(todos.id, params.id)).returning().get();
+        return <TodoItem {...newTodo} />;
       }
     },
     {
@@ -45,12 +48,8 @@ const app = new Elysia()
   )
   .delete(
     "/todos/:id",
-    ({ params }) => {
-      const { id } = params;
-      const todo = db.find((todo) => todo.id === id);
-      if (todo) {
-        db.splice(db.indexOf(todo), 1);
-      }
+    async ({ params }) => {
+      await db.delete(todos).where(eq(todos.id, params.id));
     },
     {
       params: t.Object({
@@ -60,16 +59,11 @@ const app = new Elysia()
   )
   .post(
     "/todos",
-    ({ body }) => {
+    async ({ body }) => {
       if (body.content.length === 0) {
         throw new Error("Content cannot be empty");
       }
-      const todo = {
-        id: db.length + 1,
-        content: body.content,
-        completed: false,
-      };
-      db.push(todo);
+      const todo = await db.insert(todos).values(body).returning().get();
       return <TodoItem {...todo} />;
     },
     {
@@ -98,25 +92,6 @@ const BaseHTML = ({ children }: { children: Children }) => {
     </html>
   );
 };
-
-type Todo = {
-  id: number;
-  content: string;
-  completed: boolean;
-};
-
-const db: Todo[] = [
-  {
-    id: 1,
-    content: "Hello",
-    completed: false,
-  },
-  {
-    id: 2,
-    content: "World",
-    completed: false,
-  },
-];
 
 function TodoItem({ completed, content, id }: Todo) {
   return (
