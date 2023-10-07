@@ -83,6 +83,7 @@ const BaseHTML = ({ children }: { children: Children }) => {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+        <script src="https://unpkg.com/hyperscript.org@0.9.7"></script>
         <link href="/public/index.css" rel="stylesheet" type="text/css"></link>
         <title>HTMX Todo</title>
       </head>
@@ -107,7 +108,7 @@ function TodoItem({ completed, content, id }: Todo) {
 
 function TodoForm() {
   return (
-    <form class="grid" hx-post="/todos" hx-target="[data-id=list]" hx-swap="beforeend">
+    <form _="on submit target.reset()" class="grid" hx-post="/todos" hx-target="[data-id=list]" hx-swap="beforeend">
       <input class="border border-black" type="text" name="content" />
       <button class="bg-black text-white p-2" type="submit">
         Submit

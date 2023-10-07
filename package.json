@@ -1,6 +1,6 @@
 {
   "name": "htmx-todo",
-  "module": "index.ts",
+  "module": "src/index.tsx",
   "type": "module",
   "scripts": {
     "dev": "bun run --watch src/index.tsx",
@@ -9,6 +9,7 @@
     "db:studio": "bunx drizzle-kit studio"
   },
   "devDependencies": {
+    "@flydotio/dockerfile": "latest",
     "bun-types": "latest",
     "drizzle-kit": "^0.19.13"
   },
